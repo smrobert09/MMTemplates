@@ -316,46 +316,23 @@
     ],
     "ApexTrigger":[  
         {  
+            "name":"Apex Trigger - EDU",
+            "file_name":"ApexEDUTrigger.trigger",
+            "description":"Apex Trigger template for EDU Framework",
+            "author":"S Morgan Robertson",
+            "params":[  
+                {  
+                    "name":"object_name",
+                    "description":"Object API Name",
+                    "default":"Account"
+                }
+            ]
+        },
+        {  
             "name":"Apex Trigger",
             "file_name":"ApexTrigger.trigger",
             "description":"Basic Apex Trigger template",
             "author":"MavensMate",
-            "params":[  
-                {  
-                    "name":"api_name",
-                    "description":"Apex Trigger API Name",
-                    "default":"MyCoolTrigger"
-                },
-                {  
-                    "name":"object_name",
-                    "description":"Object API Name",
-                    "default":"Account"
-                }
-            ]
-        },
-        {  
-            "name":"Apex Trigger - All Events",
-            "file_name":"ApexTriggerAllEvents.trigger",
-            "description":"Apex Trigger with all Trigger events",
-            "author":"@alexander-brett",
-            "params":[  
-                {  
-                    "name":"api_name",
-                    "description":"Apex Trigger API Name",
-                    "default":"MyCoolTrigger"
-                },
-                {  
-                    "name":"object_name",
-                    "description":"Object API Name",
-                    "default":"Account"
-                }
-            ]
-        },
-        {  
-            "name":"Apex Trigger - Bulkified",
-            "file_name":"ApexTriggerBulk.trigger",
-            "description":"Bulk Apex Trigger with all Trigger events",
-            "author":"David Schach @dschach",
             "params":[  
                 {  
                     "name":"api_name",
