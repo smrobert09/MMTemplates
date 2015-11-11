@@ -14,6 +14,26 @@
             ]
         },
         {  
+            "name":"Apex Base Dispatcher - EDU",
+            "file_name":"EDUBaseDispatcher.cls",
+            "description":"Base Dispatcher for EDU Framework",
+            "author":"S Morgan Robertson",
+            "params":[]
+        },
+        {  
+            "name":"Apex Dispatcher Template - EDU",
+            "file_name":"EDUDispatcher.cls",
+            "description":"Dispatcher template for EDU Framework",
+            "author":"S Morgan Robertson",
+            "params":[  
+                {  
+                    "name":"object_name",
+                    "description":"Object API Name",
+                    "default":"Account"
+                }
+            ]
+        },
+        {  
             "name":"ApexInterface",
             "file_name":"ApexInterface.cls",
             "description":"The default template for an Apex Interface",
