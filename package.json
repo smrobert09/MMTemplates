@@ -1,6 +1,37 @@
 {  
     "ApexClass":[  
         {  
+            "name":"Base Trigger Dispatcher - EDU",
+            "file_name":"EDUBaseDispatcher.cls",
+            "description":"Base Dispatcher required for EDU Framework",
+            "author":"S Morgan Robertson",
+            "params":[
+                {  
+                    "name":"api_name",
+                    "description":"Apex Class API Name",
+                    "default":"EB_SObjectDispatcher"
+                }
+            ]
+        },
+        {  
+            "name":"Trigger Dispatcher - EDU",
+            "file_name":"EDUDispatcher.cls",
+            "description":"Dispatcher template for EDU Framework",
+            "author":"S Morgan Robertson",
+            "params":[  
+                {  
+                    "name":"api_name",
+                    "description":"Apex Class API Name",
+                    "default":"EB_SObjectDispatcher"
+                },
+                {  
+                    "name":"object_name",
+                    "description":"Object API Name",
+                    "default":"Account"
+                }
+            ]
+        },
+        {  
             "name":"Default",
             "file_name":"ApexClass.cls",
             "description":"The default template for an Apex Class",
@@ -10,26 +41,6 @@
                     "name":"api_name",
                     "description":"Apex Class API Name",
                     "default":"MyApexClass"
-                }
-            ]
-        },
-        {  
-            "name":"Apex Base Dispatcher - EDU",
-            "file_name":"EDUBaseDispatcher.cls",
-            "description":"Base Dispatcher for EDU Framework",
-            "author":"S Morgan Robertson",
-            "params":[]
-        },
-        {  
-            "name":"Apex Dispatcher Template - EDU",
-            "file_name":"EDUDispatcher.cls",
-            "description":"Dispatcher template for EDU Framework",
-            "author":"S Morgan Robertson",
-            "params":[  
-                {  
-                    "name":"object_name",
-                    "description":"Object API Name",
-                    "default":"Account"
                 }
             ]
         },
@@ -336,11 +347,16 @@
     ],
     "ApexTrigger":[  
         {  
-            "name":"Apex Trigger - EDU",
+            "name":"Apex EDU Trigger",
             "file_name":"ApexEDUTrigger.trigger",
             "description":"Apex Trigger template for EDU Framework",
             "author":"S Morgan Robertson",
             "params":[  
+                {  
+                    "name":"api_name",
+                    "description":"Apex Trigger API Name",
+                    "default":"SObjectTrigger"
+                },
                 {  
                     "name":"object_name",
                     "description":"Object API Name",

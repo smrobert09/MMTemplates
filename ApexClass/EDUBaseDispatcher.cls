@@ -1,81 +1,148 @@
-public virtual class EB_SObjectDispatcher {
-    public List<SObject> newList {get;set;}
-    public Map<Id, SObject> oldMap {get;set;}
+global virtual class EB_SObjectDispatcher {
+    
+    public String typeName          {get;set;}
+    global List<SObject> newList    {get;set;}
+    global Map<Id, SObject> oldMap  {get;set;}
 
-    public Boolean runBeforeInsert = true;
-    public Boolean runBeforeUpdate = true;
-    public Boolean runBeforeDelete = true;
-    public Boolean runAfterInsert = true;
-    public Boolean runAfterUpdate = true;
-    public Boolean runAfterDelete = true;
-    public Boolean runAfterUndelete = true;
+    /**
+     * Constructor.
+     */
+    public EB_SObjectDispatcher(){}
 
-    public EB_SObjectDispatcher(){
-
-    }
-
-    public void initData(List<SObject> nList, Map<Id, SObject> oMap){
-        newList = nList;
-        oldMap = oMap;
+    /**
+     * Initialize the data data type and object collections.
+     *
+     * @param typeName The string value of the object type with all '_' characters removed.
+     * @param nList    A list of SObjects typically the Trigger.newList values.
+     * @param oMap     A map of SObjects typically equivalent to the Trigger.oldMap values.
+     */
+    public void initData(String typeName, List<SObject> nList, Map<Id, SObject> oMap){
+        this.typeName = typeName;
+        this.newList = nList;
+        this.oldMap = oMap;
     }
     
-    public virtual void beforeInsert(){
-        System.debug('Not overridden');
+    /**
+     * This method runs prior to any 'before' context methods.  Usually used for data preparation.
+     */
+    global virtual void prepBefore(){
+
     }
 
-    public virtual void afterInsert(){
+    /**
+     * This method runs prior to any 'after' context methods.  Usually used for data preparation.
+     */
+    global virtual void prepAfter(){
+
+    }
+
+    /**
+     * The before insert functionality placeholder for a generic sObject type.
+     */
+    global virtual void beforeInsert(){
+
+    }
+
+    /**
+     * The after insert functionality placeholder for a generic sObject type.
+     */
+    global virtual void afterInsert(){
         
     }
     
-    public virtual void beforeUpdate(){
+    /**
+     * The before update functionality placeholder for a generic sObject type.
+     */
+    global virtual void beforeUpdate(){
         
     }
 
-    public virtual void afterUpdate(){
+    /**
+     * The after update functionality placeholder for a generic sObject type.
+     */
+    global virtual void afterUpdate(){
         
     }
     
-    public virtual void beforeDelete(){
+    /**
+     * The before delete functionality placeholder for a generic sObject type.
+     */
+    global virtual void beforeDelete(){
 
     }
     
-    public virtual void afterDelete(){
+    /**
+     * The after delete functionality placeholder for a generic sObject type.
+     */
+    global virtual void afterDelete(){
 
     }
     
-    public virtual void afterUndelete(){
+    /**
+     * The after undelete functionality placeholder for a generic sObject type.
+     */
+    global virtual void afterUndelete(){
         
     }
+
+    /**
+     * This method runs after to all context methods.  Please not that this will run twice for any DML 
+     * action (once on the before context and once on the after context).
+     */
+    global virtual void andFinally(){
+
+    }
     
-    public virtual void execute(String context){
-        System.debug('Starting to execute ' + context + '.');
-        //Savepoint sp = Database.setSavepoint();
+    /**
+     * Generic execute method accepts the 'context' parameter and processes the required methods accordingly.
+     * Control of the methods can be modified by using the EB_TriggerPanel custom setting values.  
+     * 
+     * If no record is found in the setting for the given sObject, the default behavior is 'true' or run 
+     * all methods. Any call to a 'set' function will return false and have no effect.
+     *
+     * @param  context The context for which to execute the function.
+     * @return         
+     */
+    global virtual void execute(String context){
+        if(!getTriggerBreaker()){
+            System.debug('Breaker for ' + typeName + ' set to false. Skipping execution of ' + context + '.');
+        }
+        System.debug('Beginning execution of ' + context + ' handler.');
         try{
-            if(context == 'beforeInsert' && runBeforeInsert){
-                beforeInsert();
-            }else if(context == 'afterInsert' && runAfterInsert){
-                afterInsert();
-            }else if(context == 'beforeUpdate' && runBeforeUpdate){
-                beforeUpdate();
-            }else if(context == 'afterUpdate' && runAfterUpdate){
-                afterUpdate();
-            }else if(context == 'beforeDelete' && runBeforeDelete){
-                beforeDelete();
-            }else if(context == 'afterDelete' && runAfterDelete){
-                afterDelete();
-            }else if(context == 'afterUndelete' && runAfterUndelete){
-                afterUndelete();
-            }else{
-                System.debug('No valid context.');
+
+            if(context.contains('before')){
+                this.prepBefore();
+            }else if(context.contains('after')){
+                this.prepAfter();
             }
+
+            if(getTriggerSwitch(context)){
+                if(context == 'beforeInsert'){
+                    this.beforeInsert();
+                }else if(context == 'afterInsert'){
+                    this.afterInsert();
+                }else if(context == 'beforeUpdate'){
+                    this.beforeUpdate();
+                }else if(context == 'afterUpdate'){
+                    this.afterUpdate();
+                }else if(context == 'beforeDelete'){
+                    this.beforeDelete();
+                }else if(context == 'afterDelete'){
+                    this.afterDelete();
+                }else if(context == 'afterUndelete'){
+                    this.afterUndelete();
+                }else{
+                    System.debug('No valid context.');
+                    return;
+                }
+            }else{
+                System.debug('Switch for ' + typeName + ':' + context + ' set to false. Skipping execution.');
+            }
+
+            this.andFinally();
         }catch(Exception ex){
             if(newList != null){
                 for(SObject item:newList){
-                  item.addError(ex.getMessage());
-                }
-            }
-            if(oldMap != null){
-                for(SObject item:oldMap.values()){
                   item.addError(ex.getMessage());
                 }
             }
@@ -83,28 +150,126 @@ public virtual class EB_SObjectDispatcher {
             System.debug(ex.getTypeName() + ':' + ex.getLineNumber());
             System.debug(ex.getCause());
             System.debug(ex.getStackTraceString());
-            
-            //Database.rollback(sp);
         }
     }
 
-    public static EB_SObjectDispatcher init(List<SObject> nList, Map<Id, SObject> oMap){
-        String typeName;
-        if(nList != null && nList.size() > 0){
-            typeName = nList[0].getSObjectType().getDescribe().getName();
-        }else if(oMap != null && oMap.values().size() > 0){
-            typeName = oMap.values()[0].getSObjectType().getDescribe().getName();
+    /**
+     * Returns the related value of the EB_TriggerPanel record for the given context.
+     *
+     * @param  context The trigger context value with no spaces.  For example, 'beforeInsert'.
+     * @return         The return value indicates whether the trigger switch is set to on or off.
+     */
+    global virtual Boolean getTriggerSwitch(String context){
+        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
+        if(runTrigger == null){
+            return true;
         }
-        typeName = typeName.remove('__c').remove('_');
+        return runTrigger.get(context + '__c');
+    }
 
-        System.debug(typeName);
-        System.Type t = Type.forName('EB_' + typeName + 'Dispatcher');
-        System.debug(t);
+    /**
+     * Sets the related value of the EB_TriggerPanel record for the given context.
+     *
+     * @param  context The trigger context value with no spaces.  For example, 'beforeInsert'.
+     * @param  active  The desired value to set.
+     * @return         The return value indicates successful update (this transaction only).
+     */
+    global virtual Boolean setTriggerSwitch(String context, Boolean active){
+        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
+        if(runTrigger == null){
+            return false;
+        }
+        runTrigger.put(context + '__c', active);
+        return true;
+    }
+
+    /**
+     * Returns the breaker value of the EB_TriggerPanel record.
+     *
+     * @return         The return value indicates whether the trigger breaker is set to on or off.
+     */
+    global virtual Boolean getTriggerBreaker(){
+        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
+        if(runTrigger == null){
+            return true;
+        }
+        return runTrigger.Breaker__c;
+    }
+
+    /**
+     * Sets the breaker value of the EB_TriggerPanel record.
+     *
+     * @param  active  The desired value to set.
+     * @return         The return value indicates successful update (this transaction only).
+     */
+    global virtual Boolean setTriggerBreaker(Boolean active){
+        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
+        if(runTrigger == null){
+            return false;
+        }
+        runTrigger.Breaker__c = active;
+        return true;
+    }
+
+    /**
+     * Sets the related value of the EB_TriggerPanel record for all contexts.
+     *
+     * @param  active  The desired value to set.
+     * @return         The return value indicates successful update (this transaction only).
+     */
+    global virtual Boolean setAllTriggerSwitches(Boolean active){
+        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
+        if(runTrigger == null){
+            return false;
+        }
+        runTrigger.BeforeInsert__c = active;
+        runTrigger.AfterInsert__c = active;
+        runTrigger.BeforeUpdate__c = active;
+        runTrigger.AfterUpdate__c = active;
+        runTrigger.BeforeDelete__c = active;
+        runTrigger.AfterDelete__c = active;
+        runTrigger.AfterUndelete__c = active;
+        return true;
+    }
+
+    /**
+     * This method constructs and initializes the proper sObject dispatcher based upon the 
+     * data input (newList and oldMap).  The dispatcher is chosen by formula by finding the 
+     * sObject type name, removing all '_' characters, prepending 'EB_', and appending 
+     * 'Dispatcher'.  For example: My_Custom_Object__c => EB_MyCustomObjectcDispatcher'
+     *
+     * @param  newList List of sObjects, typically equivalent to Trigger.newList
+     * @param  oldMap  Map of sObjects, typically equivalent to Trigger.oldMap
+     * @return         
+     */
+    global static EB_SObjectDispatcher init(List<SObject> newList, Map<Id, SObject> oldMap){
+        String typeName;
+        if(newList != null && newList.size() > 0){
+            typeName = newList[0].getSObjectType().getDescribe().getName();
+        }else if(oldMap != null && oldMap.values().size() > 0){
+            typeName = oldMap.values()[0].getSObjectType().getDescribe().getName();
+        }else{
+            typeName = '';
+        }
+
+        typeName = typeName.remove('_');
+
+        try{
+            System.debug(typeName);
+            System.Type t = Type.forName('EB_' + typeName + 'Dispatcher');
+            System.debug(t);
+        }catch(Exception ex){
+            System.debug(ex.getTypeName() + ':' + ex.getLineNumber());
+            System.debug(ex.getCause());
+            System.debug(ex.getStackTraceString());
+
+            return null;
+        }
 
         EB_SObjectDispatcher dispatch;
         if(t != null){
             dispatch = (EB_SObjectDispatcher) t.newInstance();
-            dispatch.initData(nList, oMap);
+            dispatch.initData(typeName, newList, oldMap);
             return dispatch;
         }
         return null;
