@@ -1,4 +1,4 @@
-public class {{ api_name }} extends EBEDU.SObjectDispatcher {
+public class {{ api_name }} extends EB_SObjectDispatcher {
     
     /**
      * The before insert functionality on the {{ object_name }} object

@@ -3,7 +3,7 @@ trigger {{ api_name }} on {{ object_name }} (
 	after insert, 	after update, 	after delete, 	after undelete) {
 
     //Initialize the dispatcher
-	EBEDU.SObjectDispatcher dispatch = EBEDU.SObjectDispatcher.init(Trigger.new, Trigger.oldMap);
+	EB_SObjectDispatcher dispatch = EB_SObjectDispatcher.init(Trigger.new, Trigger.oldMap);
 
     //Execute the appropriate dispatch method.
     if(dispatch != null){

@@ -1,25 +1,20 @@
 global virtual class EB_SObjectDispatcher {
     
-    public String typeName          {get;set;}
-    global List<SObject> newList    {get;set;}
-    global Map<Id, SObject> oldMap  {get;set;}
-
-    /**
-     * Constructor.
-     */
-    public EB_SObjectDispatcher(){}
+    global String typeName                {get;set;}
+    global List<SObject> newList          {get;set;}
+    global Map<Id, SObject> oldMap        {get;set;}
 
     /**
      * Initialize the data data type and object collections.
      *
-     * @param typeName The string value of the object type with all '_' characters removed.
-     * @param nList    A list of SObjects typically the Trigger.newList values.
-     * @param oMap     A map of SObjects typically equivalent to the Trigger.oldMap values.
+     * @param typeName   The string value of the object type with all '_' characters removed.
+     * @param newList    A list of SObjects typically the Trigger.newList values.
+     * @param oldMap     A map of SObjects typically equivalent to the Trigger.oldMap values.
      */
-    public void initData(String typeName, List<SObject> nList, Map<Id, SObject> oMap){
+    public void initData(String typeName, List<SObject> newList, Map<Id, SObject> oldMap){
         this.typeName = typeName;
-        this.newList = nList;
-        this.oldMap = oMap;
+        this.newList = newList;
+        this.oldMap = oldMap;
     }
     
     /**
@@ -104,7 +99,7 @@ global virtual class EB_SObjectDispatcher {
      * @return         
      */
     global virtual void execute(String context){
-        if(!getTriggerBreaker()){
+        if(EB_TriggerPanel.getBreaker(typeName)){
             System.debug('Breaker for ' + typeName + ' set to false. Skipping execution of ' + context + '.');
         }
         System.debug('Beginning execution of ' + context + ' handler.');
@@ -116,7 +111,7 @@ global virtual class EB_SObjectDispatcher {
                 this.prepAfter();
             }
 
-            if(getTriggerSwitch(context)){
+            if(EB_TriggerPanel.getSwitch(typeName, context)){
                 if(context == 'beforeInsert'){
                     this.beforeInsert();
                 }else if(context == 'afterInsert'){
@@ -132,8 +127,8 @@ global virtual class EB_SObjectDispatcher {
                 }else if(context == 'afterUndelete'){
                     this.afterUndelete();
                 }else{
+                    //This will never run as the switch always returns false
                     System.debug('No valid context.');
-                    return;
                 }
             }else{
                 System.debug('Switch for ' + typeName + ':' + context + ' set to false. Skipping execution.');
@@ -151,85 +146,6 @@ global virtual class EB_SObjectDispatcher {
             System.debug(ex.getCause());
             System.debug(ex.getStackTraceString());
         }
-    }
-
-    /**
-     * Returns the related value of the EB_TriggerPanel record for the given context.
-     *
-     * @param  context The trigger context value with no spaces.  For example, 'beforeInsert'.
-     * @return         The return value indicates whether the trigger switch is set to on or off.
-     */
-    global virtual Boolean getTriggerSwitch(String context){
-        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
-        if(runTrigger == null){
-            return true;
-        }
-        return runTrigger.get(context + '__c');
-    }
-
-    /**
-     * Sets the related value of the EB_TriggerPanel record for the given context.
-     *
-     * @param  context The trigger context value with no spaces.  For example, 'beforeInsert'.
-     * @param  active  The desired value to set.
-     * @return         The return value indicates successful update (this transaction only).
-     */
-    global virtual Boolean setTriggerSwitch(String context, Boolean active){
-        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
-        if(runTrigger == null){
-            return false;
-        }
-        runTrigger.put(context + '__c', active);
-        return true;
-    }
-
-    /**
-     * Returns the breaker value of the EB_TriggerPanel record.
-     *
-     * @return         The return value indicates whether the trigger breaker is set to on or off.
-     */
-    global virtual Boolean getTriggerBreaker(){
-        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
-        if(runTrigger == null){
-            return true;
-        }
-        return runTrigger.Breaker__c;
-    }
-
-    /**
-     * Sets the breaker value of the EB_TriggerPanel record.
-     *
-     * @param  active  The desired value to set.
-     * @return         The return value indicates successful update (this transaction only).
-     */
-    global virtual Boolean setTriggerBreaker(Boolean active){
-        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
-        if(runTrigger == null){
-            return false;
-        }
-        runTrigger.Breaker__c = active;
-        return true;
-    }
-
-    /**
-     * Sets the related value of the EB_TriggerPanel record for all contexts.
-     *
-     * @param  active  The desired value to set.
-     * @return         The return value indicates successful update (this transaction only).
-     */
-    global virtual Boolean setAllTriggerSwitches(Boolean active){
-        EB_RunTrigger__c runTrigger = EB_RunTrigger__c.getInstance(typeName);
-        if(runTrigger == null){
-            return false;
-        }
-        runTrigger.BeforeInsert__c = active;
-        runTrigger.AfterInsert__c = active;
-        runTrigger.BeforeUpdate__c = active;
-        runTrigger.AfterUpdate__c = active;
-        runTrigger.BeforeDelete__c = active;
-        runTrigger.AfterDelete__c = active;
-        runTrigger.AfterUndelete__c = active;
-        return true;
     }
 
     /**
@@ -256,22 +172,29 @@ global virtual class EB_SObjectDispatcher {
 
         try{
             System.debug(typeName);
-            System.Type t = Type.forName('EB_' + typeName + 'Dispatcher');
+            System.Type t;
+            if(Test.isRunningTest()){
+                t = Type.forName('SObjectDispatcher');
+                if(typeName == 'TriggerPanelc'){
+                    throw new SObjectException('Triggers are not supported on TriggerPanelc object');
+                }
+            }else{
+                t = Type.forName('EB_' + typeName + 'Dispatcher');
+            }
             System.debug(t);
+
+            EB_SObjectDispatcher dispatch;
+            if(t != null){
+                dispatch = (EB_SObjectDispatcher) t.newInstance();
+                dispatch.initData(typeName, newList, oldMap);
+                return dispatch;
+            }
         }catch(Exception ex){
             System.debug(ex.getTypeName() + ':' + ex.getLineNumber());
             System.debug(ex.getCause());
             System.debug(ex.getStackTraceString());
-
-            return null;
         }
 
-        EB_SObjectDispatcher dispatch;
-        if(t != null){
-            dispatch = (EB_SObjectDispatcher) t.newInstance();
-            dispatch.initData(typeName, newList, oldMap);
-            return dispatch;
-        }
         return null;
     }
 }
